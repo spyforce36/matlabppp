@@ -1,0 +1,158 @@
+clc
+clear
+close all
+
+id = 123456789;
+%% Q1
+a = 3;
+B = 22;
+G = 10;
+subplot(2, 2, 1)
+
+%% a
+b = 1-G*(1-a)/B;
+
+%% b
+B_gal = -B*b';
+b_gal = 1/b';
+a_gal = a;
+
+%% c
+n = 11;
+numerator = B * [1, -b];
+denominator = [1, -a];
+[h, t] = impz(numerator, denominator, n);
+subplot(2, 2, 1)
+stem(t, h)
+
+E = sum(h.^2);
+if abs(b) < 1
+    str_inv_causal_stable = "has a stable causal inverse";
+else
+    str_inv_causal_stable = "";
+end
+title(sprintf("E = %.2f %s", E, str_inv_causal_stable))
+
+%% d
+subplot(2, 2, 2)
+n = 11;
+numerator = B_gal * [1, -b_gal];
+denominator = [1, -a_gal];
+[h, t] = impz(numerator, denominator, n);
+stem(t, h)
+
+E = sum(h.^2);
+if abs(b_gal) < 1
+    str_inv_causal_stable = "has a stable causal inverse";
+else
+    str_inv_causal_stable = "";
+end
+title(sprintf("E = %.2f %s", E, str_inv_causal_stable))
+
+%% e
+subplot(2, 2, 3)
+w = linspace(0, pi, 1000);
+z = exp(1j*w);
+H_func = @(a,b,B) abs(B*(1-b*z.^-1)./(1-a*z.^-1));
+
+plot(w, H_func(a, b, B), 'go', w, H_func(a_gal, b_gal, B_gal), 'r*')
+
+savefig(gcf, sprintf("fig_%d", id))
+
+%% Q2
+a = 3;
+B = 22;
+G = 10;
+figure
+subplot(1, 2, 1)
+
+%% a
+b = 1-G*(1-a)/B;
+
+%% b
+B_gal = -B*b';
+b_gal = 1/b';
+a_gal = a;
+
+%% c
+n = 100;
+numerator = B * [1, -b];
+denominator = [1, -a];
+[gd, w] = grpdelay(numerator, denominator, n);
+
+numerator = B_gal * [1, -b_gal];
+denominator = [1, -a_gal];
+[gd_gal, w_gal] = grpdelay(numerator, denominator, n);
+
+plot(w, gd, 'go', w_gal, gd_gal, 'r*')
+
+if abs(b) < 1
+    str_H = "minimum phase";
+    str_H_inv = "non-minimum phase";
+else
+    str_H_inv = "minimum phase";
+    str_H = "non-minimum phase";
+end
+legend(str_H, str_H_inv)
+xlabel('\omega')
+ylabel('group delay')
+
+%% d
+
+subplot(1, 2, 2)
+w = linspace(0, pi, 1000);
+z = exp(1j*w);
+H_func = @(a,b,B) abs(B*(1-b*z.^-1)./(1-a*z.^-1));
+
+plot(w, H_func(a, b, B), 'go', w, H_func(a_gal, b_gal, B_gal), 'r*')
+
+%% Q3
+f1 = 10;
+f2 = 10;
+T = 1;
+Fs = 2009;
+M = 10;
+L = 12;
+
+figure
+subplot(2, 2, 1)
+
+%% a
+N = T*Fs;
+t = (0:N-1)/Fs;
+x = ( ...
+        2*cos(2*pi*(f1-4*t).*t)...
+        + (1 - t/T).*cos(2*pi*f2*t)...
+    ).* ...
+    exp( ...
+       -2 * (t-T/2).^2 ...
+    );
+
+%% b 
+DTFT_x = abs(fftshift(fft(x)));
+w = fftshift(2*pi*(0:N-1)/N);
+w(w>pi) = w(w>pi) - 2*pi;
+plot(w, DTFT_x);
+
+%% c
+xc = x(1:M:end);
+
+%% d
+subplot(2,2,2)
+N_xc = length(xc);
+DTFT_xc = abs(fftshift(fft(xc)));
+w = fftshift(2*pi*(0:N_xc-1)/N_xc);
+w(w>pi) = w(w>pi) - 2*pi;
+plot(w, DTFT_xc);
+
+%% e
+xce = zeros(length(xc)*L, 1);
+xce(1:L:end) = xc;
+
+%% f
+subplot(2,2,3)
+N_xce = length(xce);
+DTFT_xce = abs(fftshift(fft(xce)));
+w = fftshift(2*pi*(0:N_xce-1)/N_xce);
+w(w>=pi) = w(w>=pi) - 2*pi;
+plot(w, DTFT_xce);
